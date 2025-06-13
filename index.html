@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Weather Application</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .weather-icon {
+            transition: all 0.3s ease;
+        }
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .backdrop-blur {
+            backdrop-filter: blur(16px);
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 transition-all duration-1000" id="body">
+    <!-- Header -->
+    <header class="p-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                    <h1 class="text-2xl font-bold text-white">Weather App</h1>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <button id="unitToggle" class="glass-effect text-white px-4 py-2 rounded-lg transition-all duration-200 hover:bg-white/30">
+                        °C
+                    </button>
+                </div>
+            </div>
+            
+            <form id="searchForm" class="mt-6 max-w-md mx-auto sm:mx-0">
+                <div class="relative">
+                    <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/70 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input
+                        type="text"
+                        id="searchInput"
+                        placeholder="Search for a city..."
+                        class="w-full pl-10 pr-12 py-3 glass-effect rounded-xl text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent"
+                    />
+                    <button
+                        type="button"
+                        id="locationBtn"
+                        class="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-white/70 hover:text-white transition-colors"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <polygon points="3,11 22,2 13,21 11,13 3,11"></polygon>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="px-6 pb-6">
+        <div class="max-w-6xl mx-auto">
+            <!-- Error Message -->
+            <div id="errorMessage" class="bg-red-500/20 border border-red-500/30 text-white p-4 rounded-xl mb-6 backdrop-blur-sm hidden">
+            </div>
+
+            <!-- Loading -->
+            <div id="loadingDiv" class="text-center py-12 hidden">
+                <div class="loading-spinner rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
+                <p class="text-white mt-4">Loading weather data...</p>
+            </div>
+
+            <!-- Weather Content -->
+            <div id="weatherContent" class="space-y-6 hidden">
+                <!-- Current Weather -->
+                <div class="glass-effect rounded-3xl p-8 shadow-2xl">
+                    <div class="flex flex-col lg:flex-row items-center justify-between">
+                        <div class="text-center lg:text-left mb-6 lg:mb-0">
+                            <div class="flex items-center justify-center lg:justify-start gap-2 mb-2">
+                                <svg class="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                    <circle cx="12" cy="10" r="3"></circle>
+                                </svg>
+                                <span id="location" class="text-white/80 text-lg"></span>
+                            </div>
+                            <h2 id="temperature" class="text-6xl lg:text-7xl font-bold text-white mb-2"></h2>
+                            <p id="description" class="text-white/80 text-xl capitalize"></p>
+                            <p id="feelsLike" class="text-white/70 text-lg"></p>
+                        </div>
+                        
+                        <div class="flex flex-col items-center">
+                            <div id="weatherIcon" class="w-24 h-24 text-white weather-icon"></div>
+                            <p id="currentDate" class="text-white/80 mt-2 text-sm"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weather Details -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="glass-effect rounded-2xl p-6 shadow-xl">
+                        <div class="flex items-center gap-3 mb-2">
+                            <svg class="w-6 h-6 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"></path>
+                                <path d="M9.6 4.6A2 2 0 1 1 11 8H2"></path>
+                                <path d="M12.6 19.4A2 2 0 1 0 14 16H2"></path>
+                            </svg>
+                            <span class="text-white/80 font-medium">Wind</span>
+                        </div>
+                        <p id="windSpeed" class="text-2xl font-bold text-white"></p>
+                        <p id="windDirection" class="text-white/70 text-sm"></p>
+                    </div>
+
+                    <div class="glass-effect rounded-2xl p-6 shadow-xl">
+                        <div class="flex items-center gap-3 mb-2">
+                            <svg class="w-6 h-6 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-2.26-.9 0-1.43.89-1.43 1.93 0 .77.62 1.4 1.39 1.4.64 0 1.18-.44 1.18-1.05 0-.31-.23-.56-.53-.56"></path>
+                                <path d="M12 2v20"></path>
+                            </svg>
+                            <span class="text-white/80 font-medium">Humidity</span>
+                        </div>
+                        <p id="humidity" class="text-2xl font-bold text-white"></p>
+                    </div>
+
+                    <div class="glass-effect rounded-2xl p-6 shadow-xl">
+                        <div class="flex items-center gap-3 mb-2">
+                            <svg class="w-6 h-6 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <circle cx="12" cy="12" r="6"></circle>
+                                <circle cx="12" cy="12" r="2"></circle>
+                            </svg>
+                            <span class="text-white/80 font-medium">Pressure</span>
+                        </div>
+                        <p id="pressure" class="text-2xl font-bold text-white"></p>
+                        <p class="text-white/70 text-sm">hPa</p>
+                    </div>
+
+                    <div class="glass-effect rounded-2xl p-6 shadow-xl">
+                        <div class="flex items-center gap-3 mb-2">
+                            <svg class="w-6 h-6 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <span class="text-white/80 font-medium">Visibility</span>
+                        </div>
+                        <p id="visibility" class="text-2xl font-bold text-white"></p>
+                        <p class="text-white/70 text-sm">km</p>
+                    </div>
+                </div>
+
+                <!-- 5-Day Forecast -->
+                <div class="glass-effect rounded-3xl p-6 shadow-2xl">
+                    <h3 class="text-xl font-bold text-white mb-6">5-Day Forecast</h3>
+                    <div id="forecast" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="script.js"></script>
+</body>
+</html>
